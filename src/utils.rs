@@ -289,11 +289,6 @@ pub fn print_mining_setup(
     let address_display = address.unwrap_or("[Not Set / Continuous Generation]");
     println!("\n{CYAN}==============================================");
     println!("⛏️  Shadow Harvester: Mining Cycle Setup");
-    println!("==============================================");
-    println!("API URL: {}", api_url);
-    println!("Mining Address: {}", address_display);
-    println!("Worker Threads: {}", threads);
-    println!("----------------------------------------------");
     println!("=============================================={RESET}");
     println!("API URL: {CYAN}{api_url}{RESET}");
     println!("Mining Address: {CYAN}{address_display}{RESET}");
