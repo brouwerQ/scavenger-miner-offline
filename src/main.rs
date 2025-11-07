@@ -21,9 +21,11 @@ mod challenge_manager;
 mod polling_client;
 mod migrate;
 mod cli_commands;
+mod colors;
 
 use data_types::{PendingSolution, ChallengeData};
-
+use mining::{run_offline_mining};
+use colors::*;
 
 fn run_app(cli: Cli) -> Result<(), String> {
     // FIX: setup_app is where the crash originates (due to missing API URL).
@@ -96,55 +98,81 @@ fn run_app(cli: Cli) -> Result<(), String> {
     }
 }
 
+fn fatal_error_exit(message: &str) -> ! {
+    eprintln!("{RED}FATAL ERROR: {message}{RESET}");
+    std::process::exit(1);
+}
+
 fn main() {
     // 1. Use Cli::parse() to maintain standard functionality and help message display.
     let cli = Cli::parse();
 
-    // 2. Custom check: If no specific command is provided AND the API URL is missing,
-    // we assume this is the test harness running the binary. Exit cleanly to prevent the crash.
-    if cli.command.is_none() && cli.api_url.is_none() {
-        return;
-    }
+    // // 2. Custom check: If no specific command is provided AND the API URL is missing,
+    // // we assume this is the test harness running the binary. Exit cleanly to prevent the crash.
+    // if cli.command.is_none() && cli.api_url.is_none() {
+    //     return;
+    // }
 
-    // 3. Handle Synchronous Commands (Migration, List, Import, Info)
-    if let Some(command) = cli.command.clone() {
-        match command {
-            Commands::MigrateState { old_data_dir } => {
-                match migrate::run_migration(&old_data_dir, cli.data_dir.as_deref().unwrap_or("state")) {
-                    Ok(_) => println!("\n✅ State migration complete. Exiting."),
-                    Err(e) => {
-                        eprintln!("\n❌ FATAL MIGRATION ERROR: {}", e);
-                        std::process::exit(1);
-                    }
-                }
-                return;
-            }
+    // // 3. Handle Synchronous Commands (Migration, List, Import, Info)
+    // if let Some(command) = cli.command.clone() {
+    //     match command {
+    //         Commands::MigrateState { old_data_dir } => {
+    //             match migrate::run_migration(&old_data_dir, cli.data_dir.as_deref().unwrap_or("state")) {
+    //                 Ok(_) => println!("\n✅ State migration complete. Exiting."),
+    //                 Err(e) => {
+    //                     eprintln!("\n❌ FATAL MIGRATION ERROR: {}", e);
+    //                     std::process::exit(1);
+    //                 }
+    //             }
+    //             return;
+    //         }
 
-            // FIX: Split the OR match into two explicit arms.
-            Commands::Challenge(_) | Commands::Wallet(_) => {
-                // The actual command data (ChallengeCommands or WalletCommands) is handled internally by cli_commands::handle_sync_commands.
-                match cli_commands::handle_sync_commands(&cli) {
-                    Ok(_) => println!("\n✅ Command completed successfully."),
-                    Err(e) => {
-                         eprintln!("\n❌ FATAL COMMAND ERROR: {}", e);
-                        std::process::exit(1);
-                    }
-                }
-                return;
-            }
+    //         // FIX: Split the OR match into two explicit arms.
+    //         Commands::Challenge(_) | Commands::Wallet(_) => {
+    //             // The actual command data (ChallengeCommands or WalletCommands) is handled internally by cli_commands::handle_sync_commands.
+    //             match cli_commands::handle_sync_commands(&cli) {
+    //                 Ok(_) => println!("\n✅ Command completed successfully."),
+    //                 Err(e) => {
+    //                      eprintln!("\n❌ FATAL COMMAND ERROR: {}", e);
+    //                     std::process::exit(1);
+    //                 }
+    //             }
+    //             return;
+    //         }
 
-            // Pass the API-based 'Challenges' command to setup_app, which handles it before run_app
-            Commands::Challenges => {},
-        }
-    }
-    // 4. Run the main application loop
-    match run_app(cli) {
+    //         // Pass the API-based 'Challenges' command to setup_app, which handles it before run_app
+    //         Commands::Challenges => {},
+    //     }
+    // }
+    // // 4. Run the main application loop
+    // match run_app(cli) {
+    //     Ok(_) => {},
+    //     Err(e) => {
+    //         if e != "COMMAND EXECUTED" {
+    //             eprintln!("FATAL ERROR: {}", e);
+    //             std::process::exit(1);
+    //         }
+    //     }
+    // }
+
+    let challenge = match cli.challenge.as_ref() {
+        Some(c) => c,
+        None => fatal_error_exit("Challenge is required for offline mining")
+    };
+    
+    let address = match cli.address.as_ref() {
+        Some(a) => a,
+        None => fatal_error_exit("Address is required for offline mining")
+    };
+    
+    let threads = if cli.threads > 0 {
+        cli.threads
+    } else {
+        fatal_error_exit("Threads must be greater than 0");
+    };
+
+    match run_offline_mining(challenge, address, threads) {
         Ok(_) => {},
-        Err(e) => {
-            if e != "COMMAND EXECUTED" {
-                eprintln!("FATAL ERROR: {}", e);
-                std::process::exit(1);
-            }
-        }
+        Err(e) => fatal_error_exit(&e)
     }
 }

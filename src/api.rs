@@ -38,9 +38,43 @@ pub fn parse_cli_challenge_string(challenge_str: &str) -> Result<CliChallengeDat
         difficulty: parts[2].trim().to_string(),
         no_pre_mine_hour_str: parts[3].trim().to_string(),
         latest_submission: parts[4].trim().to_string(),
+        challenge_number: 0,
+        day: 0,
+        issued_at: String::new(),
     })
 }
 
+pub fn parse_cli_challenge_string_full(challenge_str: &str) -> Result<CliChallengeData, String> {
+    let parts: Vec<&str> = challenge_str.split(',').collect();
+
+    if parts.len() != 8 {
+        return Err(format!(
+            "Invalid --challenge format. Expected 8 comma-separated values, found {}. Format: challenge_id,no_pre_mine,difficulty,no_pre_mine_hour,latest_submission,challenge_number,day,issued_at",
+            parts.len()
+        ));
+    }
+
+    let challenge_number: u16 = match parts[5].trim().parse() {
+        Ok(num) => num,
+        Err(_) => return Err(format!("Invalid challenge_number: '{}'", parts[5].trim()))
+    };
+
+    let day: u8 = match parts[6].trim().parse() {
+        Ok(num) => num,
+        Err(_) => return Err(format!("Invalid day: '{}'", parts[6].trim()))
+    };
+
+    Ok(CliChallengeData {
+        challenge_id: parts[0].trim().to_string(),
+        no_pre_mine_key: parts[1].trim().to_string(),
+        difficulty: parts[2].trim().to_string(),
+        no_pre_mine_hour_str: parts[3].trim().to_string(),
+        latest_submission: parts[4].trim().to_string(),
+        challenge_number: challenge_number,
+        day: day,
+        issued_at: parts[7].trim().to_string(),
+    })
+}
 
 /// Performs the POST /register call using key/signature arguments.
 pub fn register_address(

@@ -6,6 +6,7 @@ use crate::data_types::{
     DataDir, DataDirMnemonic, MiningContext, MiningResult, FILE_NAME_RECEIPT,
     ChallengeData, Statistics, TandCResponse, ChallengeResponse, PendingSolution, FILE_NAME_FOUND_SOLUTION
 };
+use crate::colors::*;
 use reqwest::blocking::{self, Client};
 use std::ffi::OsStr;
 use std::thread;
@@ -155,6 +156,22 @@ pub fn get_challenge_params(
     }
 }
 
+pub fn get_challenge_params_offline(challenge_str: &str) -> Result<ChallengeData, String> {
+    let cli_challenge_data = api::parse_cli_challenge_string_full(challenge_str)
+            .map_err(|e| format!("Challenge parameter parsing error: {}", e))?;
+        
+    let mut fixed_challenge_params = ChallengeData::default();
+    fixed_challenge_params.challenge_id = cli_challenge_data.challenge_id.clone();
+    fixed_challenge_params.no_pre_mine_key = cli_challenge_data.no_pre_mine_key.clone();
+    fixed_challenge_params.difficulty = cli_challenge_data.difficulty.clone();
+    fixed_challenge_params.no_pre_mine_hour_str = cli_challenge_data.no_pre_mine_hour_str.clone();
+    fixed_challenge_params.latest_submission = cli_challenge_data.latest_submission.clone();
+    fixed_challenge_params.challenge_number = cli_challenge_data.challenge_number;
+    fixed_challenge_params.day = cli_challenge_data.day;
+    fixed_challenge_params.issued_at = cli_challenge_data.issued_at.clone();
+
+    Ok(fixed_challenge_params)
+}
 
 pub fn print_statistics(stats_result: Result<Statistics, String>, total_hashes: u64, elapsed_secs: f64) {
     println!("\n==============================================");
@@ -270,21 +287,33 @@ pub fn print_mining_setup(
     challenge_params: &ChallengeData,
 ) {
     let address_display = address.unwrap_or("[Not Set / Continuous Generation]");
-    println!("\n==============================================");
+    println!("\n{CYAN}==============================================");
     println!("⛏️  Shadow Harvester: Mining Cycle Setup");
     println!("==============================================");
     println!("API URL: {}", api_url);
     println!("Mining Address: {}", address_display);
     println!("Worker Threads: {}", threads);
     println!("----------------------------------------------");
-    println!("CHALLENGE DETAILS:");
-    println!("  ID:               {}", challenge_params.challenge_id);
-    println!("  Day:              {}", challenge_params.day);
-    println!("  Difficulty Mask:  {}", challenge_params.difficulty);
-    println!("  Submission Deadline: {}", challenge_params.latest_submission);
-    println!("  ROM Key (no_pre_mine): {}", challenge_params.no_pre_mine_key);
-    println!("  Hash Input Hour:  {}", challenge_params.no_pre_mine_hour_str);
-    println!("----------------------------------------------");
+    println!("=============================================={RESET}");
+    println!("API URL: {CYAN}{api_url}{RESET}");
+    println!("Mining Address: {CYAN}{address_display}{RESET}");
+    println!("Worker Threads: {CYAN}{threads}{RESET}");
+    println!("{CYAN}----------------------------------------------{RESET}");
+    println!("- ID: {CYAN}{} (day {}, number {}){RESET}", challenge_params.challenge_id, challenge_params.day, challenge_params.challenge_number);
+    println!("- Issued at: {CYAN}{}{RESET}", challenge_params.issued_at);
+    println!("- Difficulty Mask: {CYAN}{}{RESET}", challenge_params.difficulty);
+    println!("- Submission Deadline: {CYAN}{}{RESET}", challenge_params.latest_submission);
+    println!("- ROM Key (no_pre_mine): {CYAN}{}{RESET}", challenge_params.no_pre_mine_key);
+    println!("- Hash Input Hour: {CYAN}{}{RESET}", challenge_params.no_pre_mine_hour_str);
+    println!("{CYAN}----------------------------------------------{RESET}");
+}
+
+pub fn print_mining_setup_without_api(
+    address: Option<&str>,
+    threads: u32,
+    challenge_params: &ChallengeData,
+) {
+    print_mining_setup("[Not Set]", address, threads, challenge_params);
 }
 
 // New function to check if a specific index already has a receipt

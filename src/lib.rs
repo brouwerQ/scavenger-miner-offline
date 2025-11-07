@@ -601,7 +601,7 @@ pub fn scavenge(
                 }
                 Result::Found(nonce, _h_output) => {
                     let nonce_hex = format!("{:016x}", nonce);
-                    println!("\nFound valid nonce: {}", nonce_hex);
+                    println!("\n✅ Found valid nonce: {}", nonce_hex);
                     found.push(nonce);
 
                     // 🚨 Signal all worker threads to stop gracefully
@@ -618,10 +618,11 @@ pub fn scavenge(
         let final_hashes = pos;
 
         if final_nonce_hex.is_some() {
-            let msg = format!("Scavenging complete. Found 1 solution. Total hashes checked: {}", pos);
+            let msg = format!("Scavenging complete. Found 1 solution. Total hashes checked: {pos}.");
             pb.finish_with_message(msg);
         } else {
-             pb.abandon_with_message("Scavenging stopped (No solution found).");
+            let msg = format!("Scavenging stopped with no solution found. Total hashes checked: {pos}.");
+            pb.abandon_with_message(msg);
         }
 
         // Return the found nonce (if any) from the thread scope

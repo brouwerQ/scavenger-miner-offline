@@ -16,7 +16,8 @@ test = true
 # --- BINARY TARGET CONFIGURATION ---
 [[bin]]
 # Sets the executable name (what the user runs)
-name = "shadow-harvester"
+#name = "shadow-harvester"
+name = "scavenger-miner-offline"
 # Points to the main function for the executable
 path = "src/main.rs"
 bench = false

@@ -23,7 +23,7 @@ pub struct RegistrationReceipt {
     pub registration_receipt: serde_json::Value,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct ChallengeData {
     pub challenge_id: String,
     pub difficulty: String,
@@ -122,6 +122,9 @@ pub struct CliChallengeData {
     pub difficulty: String,
     pub no_pre_mine_hour_str: String,
     pub latest_submission: String,
+    pub challenge_number: u16,
+    pub day: u8,
+    pub issued_at: String,
 }
 
 // ===============================================

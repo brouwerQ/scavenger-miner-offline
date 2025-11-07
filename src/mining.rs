@@ -4,7 +4,7 @@ use crate::api;
 use crate::data_types::{DataDir, DataDirMnemonic, MiningContext, MiningResult, ChallengeData, PendingSolution, FILE_NAME_FOUND_SOLUTION, is_solution_pending_in_queue, FILE_NAME_RECEIPT, ManagerCommand};
 use crate::cli::Cli;
 use crate::cardano;
-use crate::utils::{self, next_wallet_deriv_index_for_challenge, print_mining_setup, print_statistics, receipt_exists_for_index, run_single_mining_cycle};
+use crate::utils::{self, next_wallet_deriv_index_for_challenge, print_mining_setup, print_mining_setup_without_api, print_statistics, receipt_exists_for_index, run_single_mining_cycle};
 use std::fs;
 use std::sync::mpsc::Sender;
 use std::sync::atomic::Ordering;
@@ -449,6 +449,38 @@ pub fn run_ephemeral_key_mining(context: MiningContext) -> Result<(), String> {
         let stats_result = api::fetch_statistics(&context.client, &context.api_url, &generated_mining_address);
         print_statistics(stats_result, final_hashes, final_elapsed);
         println!("\n[CYCLE END] Starting next mining cycle immediately...");
+    }
+}
+
+/// MODE: Offline Mining
+#[allow(unused_assignments)] // Suppress warnings for final_hashes/final_elapsed assignments
+pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threads: u32) -> Result<(), String> {
+    let challenge_params = utils::get_challenge_params_offline(cli_challenge)?;
+    print_mining_setup_without_api(Some(mining_address.as_str()), threads, &challenge_params);
+
+    let (found_nonce, total_hashes, elapsed_secs) = shadow_harvester_lib::scavenge(
+        mining_address.clone(),
+        challenge_params.challenge_id.clone(),
+        challenge_params.difficulty.clone(),
+        challenge_params.no_pre_mine_key.clone(),
+        challenge_params.latest_submission.clone(),
+        challenge_params.no_pre_mine_hour_str.clone(),
+        threads,
+    );
+
+    match found_nonce {
+        Some(nonce) => {
+            let result = serde_json::json!({
+                "address": mining_address,
+                "challenge_id": challenge_params.challenge_id,
+                "nonce": nonce,
+                "total_hashes": total_hashes,
+                "elapsed_secs": elapsed_secs,
+            });
+            println!("\n\n{result}");
+            Ok(())
+        },
+        None => Err(String::from("No solution found!"))
     }
 }
 
