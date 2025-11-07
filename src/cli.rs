@@ -60,6 +60,10 @@ pub struct Cli {
     /// Enable WebSocket mode for receiving challenges and posting solutions.
     #[arg(long)]
     pub websocket: bool,
+
+    /// Optional output file to write found solution or error (offline mode only).
+    #[arg(long)]
+    pub output_file: Option<String>,
 }
 
 

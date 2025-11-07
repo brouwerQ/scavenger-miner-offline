@@ -454,7 +454,7 @@ pub fn run_ephemeral_key_mining(context: MiningContext) -> Result<(), String> {
 
 /// MODE: Offline Mining
 #[allow(unused_assignments)] // Suppress warnings for final_hashes/final_elapsed assignments
-pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threads: u32) -> Result<(), String> {
+pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threads: u32) -> Result<(String), String> {
     let challenge_params = utils::get_challenge_params_offline(cli_challenge)?;
     print_mining_setup_without_api(Some(mining_address.as_str()), threads, &challenge_params);
 
@@ -477,8 +477,10 @@ pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threa
                 "total_hashes": total_hashes,
                 "elapsed_secs": elapsed_secs,
             });
-            println!("\n\n{result}");
-            Ok(())
+
+            let result_str = result.to_string();
+            println!("\n\n{}", result_str);
+            Ok(result_str)
         },
         None => Err(String::from("No solution found!"))
     }

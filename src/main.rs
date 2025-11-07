@@ -5,6 +5,9 @@ use std::thread;
 use std::sync::mpsc;
 use std::time::Duration;
 use cli::{Cli, Commands};
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 // Declare modules
 mod api;
@@ -98,8 +101,19 @@ fn run_app(cli: Cli) -> Result<(), String> {
     }
 }
 
-fn fatal_error_exit(message: &str) -> ! {
+fn maybe_write_output(content: &str, cli: &Cli) {
+    let Some(output_file) = &cli.output_file else { return };
+    let path = Path::new(output_file);
+    if let Err(e) = File::create(path)
+        .and_then(|mut file| file.write_all(content.as_bytes()))
+    {
+        eprintln!("{RED}Failed to write to '{output_file}': {e}{RESET}");
+    }
+}
+
+fn fatal_error_exit(message: &str, cli: &Cli) -> ! {
     eprintln!("{RED}FATAL ERROR: {message}{RESET}");
+    maybe_write_output(message, cli);
     std::process::exit(1);
 }
 
@@ -157,22 +171,22 @@ fn main() {
 
     let challenge = match cli.challenge.as_ref() {
         Some(c) => c,
-        None => fatal_error_exit("Challenge is required for offline mining")
+        None => fatal_error_exit("Challenge is required for offline mining", &cli)
     };
     
     let address = match cli.address.as_ref() {
         Some(a) => a,
-        None => fatal_error_exit("Address is required for offline mining")
+        None => fatal_error_exit("Address is required for offline mining", &cli)
     };
     
     let threads = if cli.threads > 0 {
         cli.threads
     } else {
-        fatal_error_exit("Threads must be greater than 0");
+        fatal_error_exit("Threads must be greater than 0", &cli);
     };
 
     match run_offline_mining(challenge, address, threads) {
-        Ok(_) => {},
-        Err(e) => fatal_error_exit(&e)
+        Ok(result) => maybe_write_output(&result, &cli),
+        Err(e) => fatal_error_exit(&e, &cli)
     }
 }
