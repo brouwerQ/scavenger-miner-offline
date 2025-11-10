@@ -13,7 +13,6 @@ use std::sync::mpsc::{Sender, channel};
 use std::{sync::Arc, thread, time::SystemTime};
 use std::sync::atomic::{AtomicBool, Ordering};
 use indicatif::{ProgressBar, ProgressStyle};
-use rand::Rng;
 // ************************************
 
 
@@ -515,6 +514,7 @@ pub fn scavenge(
     latest_submission: String,
     no_pre_mine_hour: String,
     nb_threads: u32,
+    base_nonce: u64,
 ) -> (Option<String>, u64, f64) { // <-- FIX: Explicitly define the return type
     const MB: usize = 1024 * 1024;
     const GB: usize = 1024 * MB;
@@ -550,17 +550,10 @@ pub fn scavenge(
             rom: Arc::new(rom),
         };
 
-        let mut rng = rand::rng();
-        let base_nonce: u64 = rng.random();
-        println!("Base nonce: {base_nonce}");
-
         for thread_id in 0..nb_threads_u64 {
             let params = common_params.clone();
             let sender = sender.clone();
             let stop_signal = stop_signal.clone();
-
-            // Set start_nonce = thread_id
-            // let start_nonce = thread_id;
 
             // Set start_nonce = base_nonce + thread_id
             let start_nonce = base_nonce.wrapping_add(thread_id);

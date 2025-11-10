@@ -281,6 +281,7 @@ pub fn run_challenge_manager(
                             &context.api_url,
                             Some(address_str),
                             context.threads,
+                            0,
                             challenge_data
                         );
                     }

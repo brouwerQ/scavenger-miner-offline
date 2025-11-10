@@ -10,6 +10,7 @@ use std::sync::mpsc::Sender;
 use std::sync::atomic::Ordering;
 use serde_json;
 use hex;
+use rand::Rng;
 
 // FIX: Import core logic components from the library crate root
 use shadow_harvester_lib::{
@@ -117,7 +118,7 @@ pub fn run_persistent_key_mining(context: MiningContext, skey_hex: &String) -> R
 
         // FIX: Use .as_deref() to convert Option<String> to Option<&str>
         if let Some(base_dir) = context.data_dir.as_deref() { data_dir.save_challenge(base_dir, &challenge_params)?; }
-        print_mining_setup(&context.api_url, Some(mining_address.as_str()), context.threads, &challenge_params);
+        print_mining_setup(&context.api_url, Some(mining_address.as_str()), context.threads, 0, &challenge_params);
 
         loop {
             // UPDATED CALL: Removed client and api_url
@@ -315,7 +316,7 @@ pub fn run_mnemonic_sequential_mining(cli: &Cli, context: MiningContext, mnemoni
             max_registered_index = Some(wallet_deriv_index); backoff_reg.reset();
         }
 
-        print_mining_setup(&context.api_url, Some(mining_address.as_str()), context.threads, &challenge_params);
+        print_mining_setup(&context.api_url, Some(mining_address.as_str()), context.threads, 0, &challenge_params);
 
         // UPDATED CALL: Removed client and api_url
         // FIX: Use .as_ref() and .as_deref() for Option<&String> and Option<&str>
@@ -412,7 +413,7 @@ pub fn run_ephemeral_key_mining(context: MiningContext) -> Result<(), String> {
             eprintln!("Registration failed: {}. Retrying in 5 minutes...", e); std::thread::sleep(std::time::Duration::from_secs(5 * 60)); continue;
         }
 
-        print_mining_setup(&context.api_url, Some(&generated_mining_address.to_string()), context.threads, &challenge_params);
+        print_mining_setup(&context.api_url, Some(&generated_mining_address.to_string()), context.threads, 0, &challenge_params);
 
         // UPDATED CALL: Removed client and api_url
         // FIX: Use .as_ref() and .as_deref() for Option<&String> and Option<&str>
@@ -454,10 +455,17 @@ pub fn run_ephemeral_key_mining(context: MiningContext) -> Result<(), String> {
 
 /// MODE: Offline Mining
 #[allow(unused_assignments)] // Suppress warnings for final_hashes/final_elapsed assignments
-pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threads: u32) -> Result<(String), String> {
-    let challenge_params = utils::get_challenge_params_offline(cli_challenge)?;
-    print_mining_setup_without_api(Some(mining_address.as_str()), threads, &challenge_params);
+pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threads: u32, use_random_base_nonce: bool) -> Result<(String), String> {
+    let base_nonce: u64 = if use_random_base_nonce {
+        let mut rng = rand::rng();
+        rng.random()
+    } else {
+        0u64
+    };
 
+    let challenge_params = utils::get_challenge_params_offline(cli_challenge)?;
+    print_mining_setup_without_api(Some(mining_address.as_str()), threads, base_nonce, &challenge_params);
+    
     let (found_nonce, total_hashes, elapsed_secs) = shadow_harvester_lib::scavenge(
         mining_address.clone(),
         challenge_params.challenge_id.clone(),
@@ -466,6 +474,7 @@ pub fn run_offline_mining(cli_challenge: &String, mining_address: &String, threa
         challenge_params.latest_submission.clone(),
         challenge_params.no_pre_mine_hour_str.clone(),
         threads,
+        base_nonce,
     );
 
     match found_nonce {

@@ -64,6 +64,10 @@ pub struct Cli {
     /// Optional output file to write found solution or error (offline mode only).
     #[arg(long)]
     pub output_file: Option<String>,
+
+    /// Use a random base nonce for mining (offline mode only).
+    #[arg(long)]
+    pub random_base_nonce: bool,
 }
 
 

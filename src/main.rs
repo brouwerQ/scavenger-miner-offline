@@ -185,7 +185,7 @@ fn main() {
         fatal_error_exit("Threads must be greater than 0", &cli);
     };
 
-    match run_offline_mining(challenge, address, threads) {
+    match run_offline_mining(challenge, address, threads, cli.random_base_nonce) {
         Ok(result) => maybe_write_output(&result, &cli),
         Err(e) => fatal_error_exit(&e, &cli)
     }

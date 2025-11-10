@@ -221,6 +221,7 @@ pub fn run_single_mining_cycle(
         challenge_params.latest_submission.clone(),
         challenge_params.no_pre_mine_hour_str.clone(),
         threads,
+        0,
     );
 
     let mining_result = match found_nonce {
@@ -284,6 +285,7 @@ pub fn print_mining_setup(
     api_url: &str,
     address: Option<&str>,
     threads: u32,
+    base_nonce: u64,
     challenge_params: &ChallengeData,
 ) {
     let address_display = address.unwrap_or("[Not Set / Continuous Generation]");
@@ -293,6 +295,7 @@ pub fn print_mining_setup(
     println!("API URL: {CYAN}{api_url}{RESET}");
     println!("Mining Address: {CYAN}{address_display}{RESET}");
     println!("Worker Threads: {CYAN}{threads}{RESET}");
+    println!("Base Nonce: {CYAN}{base_nonce}{RESET}");
     println!("{CYAN}----------------------------------------------{RESET}");
     println!("- ID: {CYAN}{} (day {}, number {}){RESET}", challenge_params.challenge_id, challenge_params.day, challenge_params.challenge_number);
     println!("- Issued at: {CYAN}{}{RESET}", challenge_params.issued_at);
@@ -306,9 +309,10 @@ pub fn print_mining_setup(
 pub fn print_mining_setup_without_api(
     address: Option<&str>,
     threads: u32,
+    base_nonce: u64,
     challenge_params: &ChallengeData,
 ) {
-    print_mining_setup("[Not Set]", address, threads, challenge_params);
+    print_mining_setup("[Not Set]", address, threads, base_nonce, challenge_params);
 }
 
 // New function to check if a specific index already has a receipt
